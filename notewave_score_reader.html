@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827">
+<title>NOTEWAVE Score Reader</title>
+<style>
+:root{color-scheme:dark;--bg:#101522;--panel:#1a2233;--line:#34415a;--text:#f4f7ff;--muted:#b8c4da;--accent:#8ee3cf;--purple:#b9a7ff}
+*{box-sizing:border-box}body{margin:0;padding:18px;background:radial-gradient(ellipse at top,#202b43 0,#101522 65%);font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif;color:var(--text)}
+main{max-width:900px;margin:auto}.brand{display:flex;align-items:center;gap:12px}.logo{width:46px;height:46px;border-radius:14px;background:var(--accent);color:#10201e;display:grid;place-items:center;font-size:1.5rem;font-weight:900}.tag{font-size:.75rem;color:var(--accent);letter-spacing:.16em;font-weight:850}h1{font-size:clamp(2rem,6vw,3rem);margin:.3rem 0;letter-spacing:-.04em}.intro{color:var(--muted);line-height:1.7}
+.card{background:#1a2233f2;border:1px solid var(--line);border-radius:20px;padding:20px;margin:16px 0;box-shadow:0 12px 32px #0002}h2{font-size:1.2rem;margin:0 0 14px}
+label{display:block;font-weight:750;margin:0 0 7px}input,select{width:100%;background:#101827;color:var(--text);border:1px solid #465675;border-radius:10px;padding:11px;font:inherit}
+button{border:0;border-radius:11px;padding:12px 16px;font:inherit;font-weight:800;cursor:pointer;background:var(--accent);color:#10201e}button.secondary{background:#343f59;color:var(--text)}button:disabled{opacity:.55;cursor:wait}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:14px}.buttons{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.buttons button{flex:0 0 auto}
+.drop{border:1px dashed #647493;border-radius:15px;padding:22px;text-align:center;background:#101827}.drop input{max-width:100%;margin-top:12px}
+.preview{max-width:100%;max-height:360px;display:block;margin:14px auto 0;border-radius:10px}
+.muted{color:var(--muted);font-size:.9rem;line-height:1.7}.status{color:var(--purple);min-height:1.5em;margin-top:10px;font-size:.9rem}
+table{border-collapse:collapse;width:100%;margin-top:12px;font-size:.9rem}th,td{border-bottom:1px solid var(--line);padding:8px 5px;text-align:left}th{color:var(--muted)}td select{padding:8px;min-width:80px}
+.scoreline{display:flex;gap:8px;flex-wrap:wrap}.scoreline span{background:#303b54;padding:6px 9px;border-radius:9px}
+.smallbtn{padding:7px 10px;font-size:.85rem}.note{font-size:1.2rem;font-weight:900;color:var(--accent)}
+@media(max-width:600px){body{padding:11px}.row{grid-template-columns:1fr}.card{padding:15px}.buttons button{flex:1}.hide-mobile{display:none}}
+</style>
+</head>
+<body>
+<main>
+<div class="brand"><div class="logo">♪</div><div><div class="tag">WIND BAND • PRACTICE TOOL</div><div style="color:var(--muted);font-size:.8rem">SCORE READER CONCEPT</div></div></div>
+<h1>NOTEWAVE</h1>
+<p class="intro">楽譜を画像で読み込んで、音符とリズムを確認しながら再生するための練習ツール。</p>
+
+<section class="card">
+<h2>01 / 楽譜画像を読み込む</h2>
+<div class="drop">
+<strong>楽譜の写真・画像を選択</strong><br><span class="muted">JPG / PNG / WebP • できるだけ真上から撮影してね</span>
+<input id="file" type="file" accept="image/*">
+<img id="preview" class="preview" alt="アップロードした楽譜のプレビュー" hidden>
+</div>
+<div class="buttons"><button id="analyze">画像を解析する</button><button id="clear" class="secondary">画像をクリア</button></div>
+<div id="status" class="status" aria-live="polite">画像を選んで「画像を解析する」を押してね。</div>
+<p class="muted">大切：この試作版は画像を表示するところまで対応しているよ。自動で正確に音符・休符を読み取るには、専用の楽譜認識エンジン（OMR）をサーバー側などに接続する必要があるため、下の編集欄で音符を入力して再生する方式も用意しているよ。</p>
+</section>
+
+<section class="card">
+<h2>02 / パート・再生設定</h2>
+<div class="row">
+<div><label for="part">楽器・パート</label><select id="part">
+<option value="0">ピアノ／実音（C）</option><option value="-2">トランペット・B♭管（記譜→実音）</option><option value="-2">クラリネット・B♭管（記譜→実音）</option><option value="-9">アルトサックス・E♭管（記譜→実音）</option><option value="-14">テナーサックス・B♭管（記譜→実音）</option><option value="-7">ホルン・F管（記譜→実音）</option><option value="0">フルート・C管</option><option value="0">トロンボーン・実音譜</option><option value="0">ユーフォニアム・実音譜</option><option value="0">チューバ・実音譜</option>
+</select></div>
+<div><label for="tempo">テンポ（BPM）</label><input id="tempo" type="number" min="30" max="240" value="80"></div>
+</div>
+<div class="row" style="margin-top:14px">
+<div><label for="loops">再生回数</label><select id="loops"><option value="1">1回</option><option value="2">2回</option><option value="3" selected>3回</option><option value="5">5回</option></select></div>
+<div><label for="sound">音色</label><select id="sound"><option value="sine">シンプルな電子音</option><option value="triangle">やわらかい電子音</option></select></div>
+</div>
+</section>
+
+<section class="card">
+<h2>03 / 音符を確認・編集</h2>
+<p class="muted">自動認識が使えないときや、読み取りを直したいときは、音符をここに入力して再生できるよ。音の高さはC4〜B5、長さは拍数で指定するよ。休符も選べるよ。</p>
+<div class="buttons"><button id="add">＋ 音符を追加</button><button id="demo" class="secondary">サンプルを入れる</button><button id="reset" class="secondary">全部消す</button></div>
+<div style="overflow-x:auto"><table><thead><tr><th>#</th><th>音符・休符</th><th>音の高さ</th><th>長さ（拍）</th><th></th></tr></thead><tbody id="notes"></tbody></table></div>
+<div class="buttons"><button id="play">▶ 演奏する</button><button id="stop" class="secondary">■ 停止</button></div>
+<div id="playstatus" class="status" aria-live="polite">音符を追加するか、サンプルを入れてね。</div>
+</section>
+<section class="card">
+<h2>リズム入力の目安</h2>
+<div class="scoreline"><span>全音符：4拍</span><span>二分音符：2拍</span><span>四分音符：1拍</span><span>八分音符：0.5拍</span><span>十六分音符：0.25拍</span><span>付点四分音符：1.5拍</span></div>
+<p class="muted">このページの音符入力・再生はブラウザー内で動作するよ。画像の自動読譜を本当に完成させるには、次の段階でAudiverisなどのOMR（楽譜画像認識）と連携させる必要があるよ。読み込んだ写真を外部に送信する機能はこの試作版にはないよ。</p>
+</section>
+<div class="muted" style="text-align:center;padding:10px">NOTEWAVE · Hear the rhythm. Play with confidence.</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let objectUrl=null, ctx=null, activeOscillators=[], stopFlag=false;
+const pitchNames=["C","C♯","D","E♭","E","F","F♯","G","A♭","A","B♭","B"];
+function previewFile(file){if(objectUrl)URL.revokeObjectURL(objectUrl);objectUrl=URL.createObjectURL(file);$("preview").src=objectUrl;$("preview").hidden=false;$("status").textContent=`画像を読み込んだよ：${file.name}`;}
+$("file").addEventListener("change",e=>{if(e.target.files[0])previewFile(e.target.files[0])});
+$("clear").onclick=()=>{$("file").value="";$("preview").hidden=true;if(objectUrl)URL.revokeObjectURL(objectUrl);objectUrl=null;$("status").textContent="画像をクリアしたよ。"};
+$("analyze").onclick=()=>{if(!$("file").files[0]){$("status").textContent="先に楽譜の画像を選んでね。";return;}$("status").textContent="画像は読み込めたよ。現在の試作版では自動読譜エンジンが未接続なので、下の欄に音符を入力して演奏してね。";$("notes").scrollIntoView({behavior:"smooth",block:"center"});};
+function addRow(type="note",pitch=60,dur=1){
+ const tr=document.createElement("tr");
+ const idx=document.createElement("td");idx.textContent=$("notes").children.length+1;tr.appendChild(idx);
+ const t=document.createElement("td"),ts=document.createElement("select");
+ [["note","音符"],["rest","休符"]].forEach(([v,l])=>{let o=document.createElement("option");o.value=v;o.textContent=l;ts.appendChild(o)});ts.value=type;t.appendChild(ts);tr.appendChild(t);
+ const p=document.createElement("td"),ps=document.createElement("select");
+ for(let m=60;m<=83;m++){let o=document.createElement("option");o.value=m;o.textContent=pitchNames[m%12]+(Math.floor(m/12)-1);ps.appendChild(o)}ps.value=p;p.appendChild(ps);tr.appendChild(p);
+ const d=document.createElement("td"),ds=document.createElement("select");
+ [["0.25","16分 (0.25)"],["0.5","8分 (0.5)"],["0.75","付点8分 (0.75)"],["1","4分 (1)"],["1.5","付点4分 (1.5)"],["2","2分 (2)"],["3","付点2分 (3)"],["4","全音符 (4)"]].forEach(([v,l])=>{let o=document.createElement("option");o.value=v;o.textContent=l;ds.appendChild(o)});ds.value=String(dur);d.appendChild(ds);tr.appendChild(d);
+ const act=document.createElement("td"),del=document.createElement("button");del.textContent="削除";del.className="secondary smallbtn";del.onclick=()=>{tr.remove();renumber()};act.appendChild(del);tr.appendChild(act);
+ ts.onchange=()=>ps.disabled=ts.value==="rest";ps.disabled=type==="rest";
+ $("notes").appendChild(tr);renumber();
+}
+function renumber(){[...$("notes").children].forEach((r,i)=>r.firstChild.textContent=i+1)}
+$("add").onclick=()=>addRow();
+$("reset").onclick=()=>{$("notes").innerHTML="";$("playstatus").textContent="音符を全部消したよ。"};
+$("demo").onclick=()=>{$("notes").innerHTML="";addRow("note",60,1);addRow("note",64,.5);addRow("note",67,.5);addRow("rest",60,1);addRow("note",67,1.5);addRow("note",64,.5);addRow("note",60,1);$("playstatus").textContent="サンプルを入れたよ。再生してみてね。"};
+function stop(){stopFlag=true;activeOscillators.forEach(o=>{try{o.stop()}catch(e){}});activeOscillators=[];$("playstatus").textContent="停止したよ。"}
+$("stop").onclick=stop;
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+async function play(){
+ stopFlag=false;
+ const rows=[...$("notes").children].map(r=>({type:r.children[1].firstChild.value,pitch:Number(r.children[2].firstChild.value),dur:Number(r.children[3].firstChild.value)}));
+ if(!rows.length){$("playstatus").textContent="先に音符を追加するか、サンプルを入れてね。";return}
+ ctx=ctx||new(window.AudioContext||window.webkitAudioContext)();if(ctx.state==="suspended")await ctx.resume();
+ const bpm=Math.min(240,Math.max(30,Number($("tempo").value)||80)), beat=60000/bpm, repeats=Number($("loops").value)||1, wave=$("sound").value;
+ $("play").disabled=true;
+ try{
+ for(let rep=0;rep<repeats&&!stopFlag;rep++){
+  $("playstatus").textContent=`演奏中… ${rep+1}/${repeats}回`;
+  for(const row of rows){
+   if(stopFlag)break;
+   if(row.type==="note"){
+    const osc=ctx.createOscillator(),gain=ctx.createGain(),now=ctx.currentTime;
+    osc.type=wave;osc.frequency.value=440*Math.pow(2,(row.pitch-69)/12);
+    gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.18,now+.015);
+    gain.gain.setTargetAtTime(.0001,now+Math.max(.04,row.dur*beat/1000-.04),.02);
+    osc.connect(gain);gain.connect(ctx.destination);osc.start(now);osc.stop(now+row.dur*beat/1000);
+    activeOscillators.push(osc);
+   }
+   await sleep(row.dur*beat);
+  }
+  if(rep<repeats-1&&!stopFlag)await sleep(beat);
+ }
+ if(!stopFlag)$("playstatus").textContent="演奏が終わったよ。テンポを変えて聴き比べてみてね。";
+ }finally{$("play").disabled=false;activeOscillators=[]}
+}
+$("play").onclick=play;
+addRow("note",60,1);addRow("rest",60,1);
+</script>
+</body></html>
